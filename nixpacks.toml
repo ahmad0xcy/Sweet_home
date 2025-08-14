@@ -1,0 +1,5 @@
+[phases.setup]
+nixPkgs = ["python311", "socat"]
+
+[start]
+cmd = "socat TCP-LISTEN:9000,fork,reuseaddr EXEC:\"bash -lc 'python3 server.py'\",pty,setsid,ctty"
