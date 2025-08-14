@@ -113,6 +113,9 @@ stages = [
 ]
 
 # ===================== Runner =====================
+print("TCP connection established! 🦀")
+
+
 def main():
     # Greeting
     type_out(BANNER, delay=0.001)
@@ -169,3 +172,4 @@ if __name__ == "__main__":
     except Exception:
         sys.stdout.write("\nAn unexpected error occurred. Please try again later.\n")
         sys.stdout.flush()
+
