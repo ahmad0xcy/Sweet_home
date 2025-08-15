@@ -1,5 +1,8 @@
 [phases.setup]
 nixPkgs = ["python311", "socat"]
 
+[phases.install]
+cmds = ["python3 -m pip install --no-cache-dir -r requirements.txt"]
+
 [start]
 cmd = "socat -d -d TCP-LISTEN:9000,fork,reuseaddr,crnl EXEC:\"python3 -u ./server.py\",pty,setsid,ctty"
