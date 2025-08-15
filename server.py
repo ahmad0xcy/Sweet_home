@@ -1,175 +1,87 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+import sys
+import time
+from colorama import Fore, Style, init
 
-import sys, time, base64
+init(autoreset=True)
 
-# ===================== Settings =====================
-SLOW_DELAY = 0.02   # per-char delay for "typewriter" effect
-MAX_WRONG  = 3
+# 🎨 رسم سبونج بوب
+spongebob = r"""
+      .--..--..--..--..--..--.
+   .' \  (`._   (_)     _   \
+ .'    |  '._)         (_)  |
+ \ _.')\      .----..---.   |
+ |(_.'  |     /    .-\-.  \  |
+ \     0|    /    ( O| O) | |
+  |  _  |  .-/     '-'   | |
+  | (_) | .'|     ___|_  | |
+  |     | |'.    [_____ ]| |
+  | _   | | |    |     | | |
+  |     | | |    |_____| | |
+  |     | | |    |     | | |
+  '-._  | | |    |     | | |
+      `-.| |    |     | | |
+         `-|    |     | | |
+           |    |     | |
+"""
 
-RED   = "\033[31m"
-RESET = "\033[0m"
-BOLD  = "\033[1m"
-
-def type_out(text, delay=SLOW_DELAY, end="\n"):
-    for ch in text:
-        sys.stdout.write(ch)
+# 🐢 دالة الكتابة البطيئة
+def slow_print(text, delay=0.04, color=Fore.WHITE):
+    for char in text:
+        sys.stdout.write(color + char + Style.RESET_ALL)
         sys.stdout.flush()
         time.sleep(delay)
-    sys.stdout.write(end)
-    sys.stdout.flush()
+    print()
 
-def ask(prompt):
-    type_out(prompt, end="")
-    sys.stdout.flush()
-    return sys.stdin.readline().strip()
-
-def show_attempts_left(wrongs):
-    left = MAX_WRONG - wrongs
-    msg = f"{left} attempts left." if left != 1 else "1 attempt left."
-    sys.stdout.write(RED + msg + RESET + "\n")
-    sys.stdout.flush()
-
-# ===================== Banner & Art =====================
-BANNER = r"""
-  ____  _                                _                     
- / ___|| |__   __ _ _ __ ___  ___  _ __ | | ___   ___  _ __    
- \___ \| '_ \ / _` | '__/ __|/ _ \| '_ \| |/ _ \ / _ \| '_ \   
-  ___) | | | | (_| | |  \__ \  __/| | | | | (_) | (_) | | | |  
- |____/|_| |_|\__,_|_|  |___/\___||_| |_|_|\___/ \___/|_| |_|  
+# 📜 القصة
+story = """
+There was someone named rayanosamaahmad who loved SpongeBob so much.
+But he had many questions hidden deep in his mind — questions that only the wisest could answer.
+He decided to challenge you.
+If you answer them correctly, he will give you pieces of a secret flag.
 """
 
-ASCII_ART = r"""
-    .--.   .-.
-   |o_o | (o o)   <- Squidward (tiny)
-   |:_/ |  |-|
-  //   \ \ / \
- (|     | )|_|_|
-/'\_   _/`     \
-\___)=(___/  \__\
-
-  <- SpongeBob (small & cute!)
-"""
-
-TITLE = "Krabby Patty Secrets — SpongeBob Crypto CTF (Shamshoon Edition)"
-
-# ===================== Flag Parts (Base64) =====================
-# Decoded parts join to: HATS{SPONGE_BOB_LOVES_KRABBY_PATTIES}
-FLAG_PARTS_PLAIN = ["HATS{", "SPONGE_", "BOB_LOVES_", "KRABBY_", "PATTIES}"]
-FLAG_PARTS_B64   = [base64.b64encode(p.encode()).decode() for p in FLAG_PARTS_PLAIN]
-
-# ===================== Stages (Hard + Tricky) =====================
-# كل مرحلة فيها تلميح ضمني داخل النص، لكن ما في حلول تلقائية جاهزة.
-stages = [
-    # Stage 1 — Base64url مُشوَّه + Homoglyphs + Reverse + No padding in prompt
-    {
-        "intro": "Spatula edge note:\n  \u0406WYytEI5R3c1J\u0417S\n\nDoodle: “no dressing, flip the patty”\n",
-        # Expected: "KRUSTY KRAB"
-        "answer_variants": [
-            "KRUSTY KRAB", "Krusty Krab", "krusty krab", "krustykrab", "KRUSTYKRAB"
-        ],
-        "hint": "Some letters aren’t what they look like. Normalize, flip, then decode safely."
-    },
-
-    # Stage 2 — Keyboard layout confusion (Dvorak <-> Qwerty) + spacing noise
-    {
-        "intro": "Squidward typed this with “his own layout”:\n  Cfrfcp   Cffycp\n\nFootnote: “mind the rests between notes”\n",
-        # Expected: "BIKINI BOTTOM"
-        "answer_variants": [
-            "BIKINI BOTTOM", "Bikini Bottom", "bikini bottom", "bikinibottom", "BIKINIBOTTOM"
-        ],
-        "hint": "Try reading it as if it were typed on a different keyboard layout."
-    },
-
-    # Stage 3 — Morse inverted (dot<->dash) + per-letter reversal + zero-width spaces
-    {
-        "intro": "Jellyfish buzz:\n  • –– ••\u200b   – • –    ••– •–•   •• –––\n\nNote: “flip the poles, currents flow backward… (watch for invisible trails)”\n",
-        # Expected: "GARY THE SNAIL"
-        "answer_variants": [
-            "GARY THE SNAIL", "Gary The Snail", "gary the snail", "GARYTHESNAIL", "garythesnail"
-        ],
-        "hint": "Normalize spacing, swap dot/dash, then reverse within letters."
-    },
-
-    # Stage 4 — Auto-key XOR (key from embedded arithmetic)
-    {
-        "intro": "Receipt hex (spilled soda on it):\n  11 5A 0F 1C 55 0E 11 5E 1E 12 12 59 5E 10\n\nCashier scribble:\n  “Total: 3 krabby patties @ 17 each + 2 drinks @ 4”\n",
-        # Expected: "SECRET FORMULA"
-        "answer_variants": [
-            "SECRET FORMULA", "Secret Formula", "secret formula", "SECRETFORMULA", "secretformula"
-        ],
-        "hint": "Compute the total, start there, and let each recovered byte drive the next."
-    },
-
-    # Stage 5 — Base58 then simple letter swaps (A↔E, O↔U, T↔L)
-    {
-        "intro": "Tip jar note:\n  WXB3byRCTmnCp5n7ize\n\nChalkboard:\n  A↔E, O↔U, T↔L  (vowels sound funny today…)\n",
-        # Expected: "PLANKTON RULES"
-        "answer_variants": [
-            "PLANKTON RULES", "Plankton Rules", "plankton rules", "PLANKTONRULES", "planktonrules"
-        ],
-        "hint": "It’s not Base64. After decoding, letters may have swapped partners."
-    },
+# ❓ الأسئلة والإجابات
+questions = [
+    ("What is the word that Basit repeats in the song?", "Road"),
+    ("When does the toy store open?", "10AM"),
+    ("The name of the cafe where SpongeBob takes a selfie?", "Turkish coffee"),
+    ("Name of the very first on-line editor credited in the Editorial Department?", "Dan Aguilar"),
+    ("What is the second most reviewed work that Dan has participated in in the same field?", "8.8")
 ]
 
-# ===================== Runner =====================
-print("TCP connection established! 🦀")
+# 🏁 أجزاء الفلاج (Base64 جاهزة من عندك)
+flag_parts = [
+    "NGhhdHN7NXAwbkczXw==",
+    "TDB2M3Nf",
+    "UkB5NG5f",
+    "YW5kXw==",
+    "Il8wNSFudH0="
+]
 
+# 🚀 البداية
+print(Fore.YELLOW + spongebob)
+slow_print(story, delay=0.03, color=Fore.WHITE)
+print(Fore.GREEN + "=" * 50)
 
-def main():
-    # Greeting
-    type_out(BANNER, delay=0.001)
-    type_out(BOLD + TITLE + RESET)
-    type_out(ASCII_ART)
-    type_out("Welcome to Bikini Bottom! 🧽🍍\n")
-    type_out("Rules:\n- 5 crypto stages.\n- You have only 3 wrong attempts total.\n- Each correct answer reveals one Base64 flag part.\n- Decode each part from Base64 and join in order for the final flag.\n")
-    type_out("Good luck, sailor! 🦀\n\n")
+# 🔄 حلقة الأسئلة
+for i, (q, answer) in enumerate(questions):
+    attempts = 3
+    while attempts > 0:
+        slow_print(f"Q{i+1}: {q}", color=Fore.CYAN)
+        user_input = input(Fore.GREEN + "> " + Style.RESET_ALL).strip().lower()
 
-    wrongs = 0
-    obtained = []
-
-    for i, stage in enumerate(stages, 1):
-        type_out(f"--- Stage {i} ---\n")
-        type_out(stage["intro"] + "\n")
-
-        while True:
-            ans = ask("> Your answer: ").strip()
-            if ans in stage["answer_variants"]:
-                type_out("✅ Correct! Here’s your Base64 flag part:")
-                part_b64 = FLAG_PARTS_B64[i-1]
-                type_out(f"  [Part {i}/5]  {part_b64}\n")
-                obtained.append(part_b64)
-                type_out("💡 Tip: keep it safe; decode all parts at the end and join in order.\n")
-                break
+        if user_input.strip().lower().replace(" ", "") == answer.strip().lower().replace(" ", ""):
+            slow_print(f"✅ Correct! Here is {flag_parts[i]}", color=Fore.WHITE)
+            print(Fore.GREEN + "-" * 50)
+            break
+        else:
+            attempts -= 1
+            if attempts > 0:
+                print(Fore.RED + f"❌ Wrong! Attempts left: {attempts}")
             else:
-                wrongs += 1
-                type_out("❌ Incorrect.")
-                if wrongs >= MAX_WRONG:
-                    type_out(RED + "No attempts left! Reconnect to try again.\n" + RESET)
-                    return
-                show_attempts_left(wrongs)
-                # Show hint after the second mistake on a given stage to keep it tough
-                if wrongs % 2 == 0:
-                    type_out(f"Hint: {stage['hint']}\n")
+                print(Fore.RED + "💀 No attempts left for this question! Exiting...")
+                sys.exit()
 
-    # Success
-    type_out(BOLD + "\n🎉 Nice! You collected all parts." + RESET)
-    type_out("Here are the Base64 parts you earned:")
-    for idx, p in enumerate(obtained, 1):
-        type_out(f"  [Part {idx}/5] {p}")
-    type_out("\nDecode each part from Base64 and join them in order for the final flag.")
-    type_out("🚩 Format reminder: HATS{...}\n")
-    type_out("See you at the Krusty Krab! 🍔")
-    
-
-if __name__ == "__main__":
-    try:
-        try:
-            sys.stdout.reconfigure(line_buffering=True)
-        except Exception:
-            pass
-        main()
-    except Exception:
-        sys.stdout.write("\nAn unexpected error occurred. Please try again later.\n")
-        sys.stdout.flush()
-
+# 🎉 النهاية
+slow_print("🎉 Congratulations! You have all parts of the flag", color=Fore.GREEN)
+print(Fore.GREEN + "=" * 50)
