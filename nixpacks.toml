@@ -1,8 +1,11 @@
 [phases.setup]
-nixPkgs = ["python311", "socat"]
+# نضيف python + pip + socat من nix
+nixPkgs = ["python311", "python311Packages.pip", "socat"]
 
 [phases.install]
-cmds = ["python3 -m pip install --no-cache-dir -r requirements.txt"]
+# استخدم pip3 الآن وهو موجود
+cmds = ["pip3 install --no-cache-dir -r requirements.txt"]
 
 [start]
+# نفس أمر التشغيل، مع stdout غير مُخزَّن وpty
 cmd = "socat -d -d TCP-LISTEN:9000,fork,reuseaddr,crnl EXEC:\"python3 -u ./server.py\",pty,setsid,ctty"
