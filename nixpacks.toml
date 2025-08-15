@@ -1,11 +1,7 @@
 [phases.setup]
-# نضيف python + pip + socat من nix
-nixPkgs = ["python311", "python311Packages.pip", "socat"]
-
-[phases.install]
-# استخدم pip3 الآن وهو موجود
-cmds = ["pip3 install --no-cache-dir -r requirements.txt"]
+# نثبت بايثون + كولوراما + سوكات من nix مباشرة
+nixPkgs = ["python311", "python311Packages.colorama", "socat"]
 
 [start]
-# نفس أمر التشغيل، مع stdout غير مُخزَّن وpty
+# نشغّل السكربت عبر socat على بورت 9000
 cmd = "socat -d -d TCP-LISTEN:9000,fork,reuseaddr,crnl EXEC:\"python3 -u ./server.py\",pty,setsid,ctty"
